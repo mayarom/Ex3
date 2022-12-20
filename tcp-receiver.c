@@ -140,6 +140,7 @@ int main(int argc, char **argv)
                    inter_count);
 
             printf("sending the xor : %d \n", xor);
+
             sendIT(xor, client_sock); // send the xor
 
             bzero(message, BUFFERSIZE);
@@ -147,7 +148,7 @@ int main(int argc, char **argv)
             // change the algorithm to reno
             char *cc_algo = "reno"; // the CC algorithm to use (in this case, "reno")
 
-            if (setsockopt(server_sock, IPPROTO_TCP, TCP_CONGESTION, cc_algo, strlen(cc_algo)) == 0)
+            if (setsockopt(server_sock, IPPROTO_TCP, TCP_CONGESTION, cc_algo, strlen(cc_algo)) == -1)
             {
                 perror("there is a problem to set the socket! \n");
                 close(server_sock);
@@ -169,7 +170,7 @@ int main(int argc, char **argv)
                 }
                 bytecounter = bytecounter + 1;
             }
-            usleep(5000); // wait for 5 ms
+            usleep(1000); // wait for 1 ms
 
             gettimeofday(&endReno, NULL);
             timersub(&endReno, &startReno, &tvakReno); // the total time reno
@@ -187,9 +188,10 @@ int main(int argc, char **argv)
             enqueue(elapsedTimeReno_P, iteration_number_p, reno_param);
 
             // if you get the exit message from the client, close the socket and exit
-            recv(client_sock, message, 1024, 0); // recive the message from the client
+            recv(client_sock, message, 10, 0); // recive the message from the client
+            printf("if we choose yes, suppose to be %s \n", message);
             // if the client send the message "again" the server will recive the file again
-            if (strcmp(message, "again") == 0)
+            if (strcmp(message, "a") == 0)
             {
                 continue;
             }
@@ -197,7 +199,7 @@ int main(int argc, char **argv)
             {
                 // print out the report
                 printf("\n\n");
-                printf("The report is: \n");
+                printf("The current result is: \n");
                 current_situation(inter_count);
                 close(client_sock); // close the socket
                 printf("client socket has been closed\n");

@@ -34,7 +34,6 @@
 int recv_it(int *num, int fd);
 int main()
 {
-
     // start reading the file
     FILE *fr = fopen("manulis13615.txt", "r");
     if (fr == false)
@@ -118,6 +117,7 @@ int main()
         // the id of the sender
         uint32_t firstid = 5251;
         uint32_t secondid = 9881;
+
         // xor the two ids
         uint32_t xor = firstid ^ secondid;
 
@@ -187,16 +187,18 @@ int main()
 
             printf("do you want to send the file? (y/n): ");
             scanf(" %c", &choice);
-            if (choice == 'y')
+            if (choice == 'y') // if the user enters 'y'
             {
                 // send the file again
-                send(sockfd, "send again", 5, 0);
+                send(sockfd, "a", 1, 0);
+                printf("you choose to send again\n");
                 continue;
             }
             else // if the user enters 'n'
             {
+                printf("you choose to finish\n");
                 // finish- close the connection and exit
-                send(sockfd, "finish", 4, 0);
+                send(sockfd, "f", 1, 0);
                 break;
             }
 
@@ -238,32 +240,30 @@ void servermess(char *part, int socket_fd)
 
 int recv_it(int *xorid, int server_sock)
 {
-    int recv = 0;
     int32_t ret;
     char *data = (char *)&ret;
-    int lsize = sizeof(ret);
-
+    int left = sizeof(ret);
+    int rc;
     do
     {
-        // https://stackoverflow.com/questions/9140409/transfer-integer-over-a-socket-in-c
-        recv = read(server_sock, data, lsize);
-        if (recv <= 0)
-        { // error or end of file
+        rc = read(server_sock, data, left);
+        if (rc <= 0)
+        { /* instead of ret */
             if ((errno == EAGAIN) || (errno == EWOULDBLOCK))
             {
-                // try again
+                // use select() or epoll() to wait for the socket to be readable again
             }
-            if (errno != EINTR)
+            else if (errno != EINTR)
             {
                 return -1;
             }
         }
-        else // if the data is received successfully
+        else
         {
-            data = data + recv;   // move the pointer to the next data
-            lsize = lsize - recv; // decrease the size of the data
+            data += rc;
+            left -= rc;
         }
-    } while (lsize > 0); // if the data is not received completely
-    *xorid = ntohl(ret); // convert the data to host byte order
+    } while (left > 0);
+    *xorid = ntohl(ret);
     return 0;
 }
