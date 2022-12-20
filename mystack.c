@@ -1,4 +1,4 @@
-#include "myqueue.h"
+#include "mystack.h"
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -33,14 +33,15 @@ long int *dequeue()
     else
     {
         long int *result = head->time_in_micro_seconds;
-        if(*(head->cubic_is_0_reno_is_1) == 0)
+        if (*(head->cubic_is_0_reno_is_1) == 0)
         {
             printf("algorithm is: cubic iter num: %d time: %ld micro_sec \n",
-          *(head->iteration_number), *(head->time_in_micro_seconds));
+                   *(head->iteration_number), *(head->time_in_micro_seconds));
         }
-        else if(*(head->cubic_is_0_reno_is_1) == 1){
+        else if (*(head->cubic_is_0_reno_is_1) == 1)
+        {
             printf("algorithm is: reno iter num: %d time: %ld micro_sec  \n",
-          *(head->iteration_number), *(head->time_in_micro_seconds));
+                   *(head->iteration_number), *(head->time_in_micro_seconds));
         }
 
         node_t *temp = head;

@@ -27,13 +27,11 @@
 #include <netinet/tcp.h>
 #include <errno.h>
 
-#define SA struct sockaddress
+#define SA struct sockaddr
 #define SERVER_PORT 5060
 #define SERVER_IP "127.0.0.1"
-
 #define MAX_LENGTH 1048576 //  max length for the file contents- 1 MB in bytes
 int recv_it(int *num, int fd);
-
 int main()
 {
 
@@ -79,7 +77,7 @@ int main()
     fclose(fr);
 
     int sockfd;
-    struct sockaddress_in server_address;
+    struct sockaddr_in servaddr;
 
     // make a socket
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -95,15 +93,16 @@ int main()
     {
         printf("good luck ! the socket created\n");
     }
-    bzero(&server_address, sizeof(server_address));
+    bzero(&servaddr, sizeof(servaddr));
 
     // convert the ip address to binary form
-    server_address.sin_family = AF_INET;
-    server_address.sin_addr.s_addr = inet_addr(SERVER_IP);
-    server_address.sin_port = htons(SERVER_PORT);
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    servaddr.sin_port = htons(SERVER_PORT);
 
     // check if the connection is established
-    if (connect(sockfd, (SA *)&server_address, sizeof(server_address)) != 0)
+
+    if (connect(sockfd, (SA *)&servaddr, sizeof(servaddr)) != 0)
     {
         // finish the program if the connection is not established
         printf("connection with the server failed...\n");
@@ -170,12 +169,12 @@ int main()
             }
 
             // send the second part of the file
-            while (second > 0)
+            while (secondlen > 0)
             {
                 if (send(sockfd, second, 1, 0) == -1)
                 {
                     printf("Error sending the second part \n");
-                    break;
+                    return 1;
                 }
                 secondlen = secondlen - 1;
             }
@@ -229,7 +228,7 @@ void servermess(char *part, int socket_fd)
     }
     else if (total < partlen) // if the message is not sent completely
     {
-        printf("find a problem- sent only %d bytes from the required %d.\n", partlen, total);
+        printf("find a problem- sent only %f bytes from the required %d.\n", partlen, total);
     }
     else // if the message is sent successfully
     {
@@ -237,33 +236,34 @@ void servermess(char *part, int socket_fd)
     }
 }
 
-int recv_it(int *num, int fd)
+int recv_it(int *xorid, int server_sock)
 {
-    int rec;
+    int recv = 0;
     int32_t ret;
     char *data = (char *)&ret;
-    int left = sizeof(ret);
+    int lsize = sizeof(ret);
 
     do
     {
-        rc = read(fd, data, left);
-        if (rc <= 0)
+        // https://stackoverflow.com/questions/9140409/transfer-integer-over-a-socket-in-c
+        recv = read(server_sock, data, lsize);
+        if (recv <= 0)
         { // error or end of file
             if ((errno == EAGAIN) || (errno == EWOULDBLOCK))
             {
                 // try again
             }
-            else if (errno != EINTR)
+            if (errno != EINTR)
             {
                 return -1;
             }
         }
         else // if the data is received successfully
         {
-            data = data + rec; // move the pointer to the next data
-            left = left - rec; // decrease the size of the data
+            data = data + recv;   // move the pointer to the next data
+            lsize = lsize - recv; // decrease the size of the data
         }
-    } while (left > 0); // if the data is not received completely
-    *num = ntohl(ret);  // convert the data to host byte order
+    } while (lsize > 0); // if the data is not received completely
+    *xorid = ntohl(ret); // convert the data to host byte order
     return 0;
 }

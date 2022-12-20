@@ -3,7 +3,10 @@
         "in.h": "c",
         "string.h": "c",
         "stdio.h": "c",
-        "masure": "c"
+        "masure": "c",
+        "mystack.h": "c",
+        "socket.h": "c",
+        "inet.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }
