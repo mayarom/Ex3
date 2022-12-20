@@ -31,7 +31,6 @@
 #define SERVER_PORT 5060
 #define SERVER_IP "127.0.0.1"
 
-
 #define MAX_LENGTH 1048576 //  max length for the file contents- 1 MB in bytes
 int recv_it(int *num, int fd);
 
@@ -40,7 +39,7 @@ int main()
 
     // start reading the file
     FILE *fr = fopen("manulis13615.txt", "r");
-    if (fr==false)
+    if (fr == false)
     {
         perror("Error to open the file");
         exit(1);
@@ -49,12 +48,12 @@ int main()
     // file size
     fseek(fr, 0, SEEK_END);
     long lenfr = ftell(fr);
-    //rewind function is a possible cancellation point and therefore not marked with __THROW.
+    // rewind function is a possible cancellation point and therefore not marked with __THROW.
     rewind(fr);
 
     // dividing the file to two parts
-    long firstlen = (lenfr/ 2);
-    long secondlen = lenfr  - firstlen;
+    long firstlen = (lenfr / 2);
+    long secondlen = lenfr - firstlen;
 
     // Read the first part of the file
     char *first = malloc(firstlen);
@@ -68,7 +67,7 @@ int main()
 
     // Read the second part of the file
     char *second = malloc(secondlen);
-    if (second==false)
+    if (second == false)
     {
         perror("Error in reading the second part of the file");
         fclose(fr);
@@ -98,7 +97,7 @@ int main()
     }
     bzero(&server_address, sizeof(server_address));
 
-    //convert the ip address to binary form
+    // convert the ip address to binary form
     server_address.sin_family = AF_INET;
     server_address.sin_addr.s_addr = inet_addr(SERVER_IP);
     server_address.sin_port = htons(SERVER_PORT);
@@ -106,7 +105,7 @@ int main()
     // check if the connection is established
     if (connect(sockfd, (SA *)&server_address, sizeof(server_address)) != 0)
     {
-        //finish the program if the connection is not established
+        // finish the program if the connection is not established
         printf("connection with the server failed...\n");
         close(sockfd);
         // exit the program
@@ -119,7 +118,7 @@ int main()
         char choice;
         // the id of the sender
         uint32_t firstid = 5251;
-        uint32_t secondid =9881;
+        uint32_t secondid = 9881;
         // xor the two ids
         uint32_t xor = firstid ^ secondid;
 
@@ -127,7 +126,7 @@ int main()
         {
             char *cc = "cubic";
 
-            //check if the cc algorithm is set
+            // check if the cc algorithm is set
             if (setsockopt(sockfd, IPPROTO_TCP, TCP_CONGESTION, cc, strlen(cc)) != 0)
             {
                 printf("setsockopt failed \n");
@@ -137,18 +136,17 @@ int main()
             // send the first part of the file like the way we did in reciever.c
             while (firstlen > 0)
             {
-                //find a problem in sending the data
+                // find a problem in sending the data
                 if (send(sockfd, first, 1, 0) == -1)
                 {
                     printf(" there is a problem in sending the data\n");
                     exit(1);
                 }
 
-                firstlen=firstlen-1;
+                firstlen = firstlen - 1;
             }
-            //if no problem in sending the data
+            // if no problem in sending the data
             printf("First part sent \n");
-
 
             // send the xor of the ids
             int *renum = (int *)malloc(sizeof(int)); // the number to receive
@@ -160,12 +158,11 @@ int main()
                 printf("Authentication failed \n");
                 break;
             }
-          
 
-            char *ren_cc= "reno"; // declare the cc algorithm to reno
+            char *ren_cc = "reno"; // declare the cc algorithm to reno
 
             // set the cc algorithm to reno with setsockopt
-            int answer = setsockopt(sockfd, IPPROTO_TCP, TCP_CONGESTION, ren_cc ,strlen(ren_cc));
+            int answer = setsockopt(sockfd, IPPROTO_TCP, TCP_CONGESTION, ren_cc, strlen(ren_cc));
             if (answer == -1)
             {
                 printf("Error setting the cc algorithm to reno \n");
@@ -180,7 +177,7 @@ int main()
                     printf("Error sending the second part \n");
                     break;
                 }
-                secondlen=secondlen-1;
+                secondlen = secondlen - 1;
             }
 
             printf("Second part sent \n");
@@ -214,12 +211,11 @@ int main()
     free(second);
     printf("free the first and second part of the file");
     return 0;
-
 }
 
-void servermess (char *part, int socket_fd)
+void servermess(char *part, int socket_fd)
 {
-    double partlen= MAX_LENGTH / 2;
+    double partlen = MAX_LENGTH / 2;
     int total = send(socket_fd, part, partlen, 0);
     if (total == -1)
     {
@@ -227,9 +223,9 @@ void servermess (char *part, int socket_fd)
         close(socket_fd);
         exit(1);
     }
-    else if (total== 0) //in case the connection is closed 
+    else if (total == 0) // in case the connection is closed
     {
-        printf("error with the connection \n"); 
+        printf("error with the connection \n");
     }
     else if (total < partlen) // if the message is not sent completely
     {
@@ -247,7 +243,7 @@ int recv_it(int *num, int fd)
     int32_t ret;
     char *data = (char *)&ret;
     int left = sizeof(ret);
-   
+
     do
     {
         rc = read(fd, data, left);
@@ -264,11 +260,10 @@ int recv_it(int *num, int fd)
         }
         else // if the data is received successfully
         {
-            data =data+ rec;// move the pointer to the next data
-            left =left- rec;// decrease the size of the data
+            data = data + rec; // move the pointer to the next data
+            left = left - rec; // decrease the size of the data
         }
-    } 
-    while (left > 0);// if the data is not received completely
-    *num = ntohl(ret);// convert the data to host byte order
+    } while (left > 0); // if the data is not received completely
+    *num = ntohl(ret);  // convert the data to host byte order
     return 0;
 }

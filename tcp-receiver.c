@@ -20,11 +20,11 @@
 #include <netinet/tcp.h>
 
 #define MAX_CON 5 // 100 is the max number of pending connections
-#define fileSize 1746760  
-#define BUFFERSIZE 1746760 
+#define fileSize 1746760
+#define BUFFERSIZE 1746760
 #define SERVERPORT 3000
 
-typedef struct sockaddr_in SOCK_IN; 
+typedef struct sockaddr_in SOCK_IN;
 typedef struct sockaddr SA;
 
 char message[BUFFERSIZE];
@@ -34,11 +34,11 @@ void current_situation(int times);
 
 int main(int argc, char **argv)
 {
-    
+
     int server_sock, client_sock, addr_size;
     SOCK_IN serv_addr, clnt_addr;
 
-    if((server_sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+    if ((server_sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     {
         perror("Failed to craete socket\n");
         exit(-1);
@@ -62,140 +62,262 @@ int main(int argc, char **argv)
         printf("connected succesfully! on socket %d \n", client_sock);
 
         // the the thing we want to do with the connection
-        handle_connection(client_sock, server_sock);
+        // handle_connection(client_sock, server_sock);
+
+        // recieve the first part of the file will use them to check the timing
+
+        uint32_t firstid = 5251;
+        uint32_t secondid = 9881;
+        uint32_t xor = firstid ^ secondid;
+        int inter_count = 0;
+
+        int bytecounter = 0;
+        while (1) //  check the timing
+        {
+            struct timeval startCubic, endCubic, tvalCubic; // will use them to check the timing
+            struct timeval startReno, endReno, tvakReno;    // will use them to check the timing
+
+            inter_count = inter_count + 1;
+            bzero(message, BUFFERSIZE); // clear the buffer
+
+            // set the algorithm to cubic
+            char *cc = "cubic";
+            if (setsockopt(client_sock, IPPROTO_TCP, TCP_CONGESTION, cc, strlen(cc)) != 0)
+            {
+                printf("setsockopt unfortunately failed! \n");
+                return;
+            }
+            printf("CC algorithm changed to %s\n", cc);
+
+            if (gettimeofday(&startCubic, NULL) < 0) // start counting the time and check it's not under than zero
+            {
+                printf("time can't be less than 0 \n");
+                break;
+            }
+
+            while (bytecounter < BUFFERSIZE / 2) // send the first part of the file
+            {
+                if (recv(client_sock, message, 1, 0) == -1)
+                {
+                    printf("failed to recieve \n");
+                    break;
+                }
+                bytecounter = bytecounter + 1;
+            }
+            usleep(1000);
+            gettimeofday(&endCubic, NULL); // finish count for first part of the file
+
+            bzero(message, BUFFERSIZE);
+            timersub(&endCubic, &startCubic, &tvalCubic); // the total time cubic
+
+            long int *time_elapsed_cubic = (long int *)malloc(sizeof(long int));
+            *time_elapsed_cubic = tvalCubic.tv_sec * 1000000 + tvalCubic.tv_usec;
+            int *iteration_number_p = (int *)malloc(sizeof(int));
+            *iteration_number_p = inter_count;
+            int *cubic_param = (int *)malloc(sizeof(int));
+            *cubic_param = 0;
+            enqueue(time_elapsed_cubic, iteration_number_p, cubic_param);
+
+            printf("The algorithm is cubic, time: %ld.%06ld, iter num: %d\n",
+                   (long int)tvalCubic.tv_sec,
+                   (long int)tvalCubic.tv_usec,
+                   inter_count);
+
+            printf("sending the xor : %d \n", xor);
+            sendIT(xor, client_sock); // send the xor
+
+            bzero(message, BUFFERSIZE);
+
+            // change the algorithm to reno
+            char *cc_algo = "reno"; // the CC algorithm to use (in this case, "reno")
+
+            if (setsockopt(server_sock, IPPROTO_TCP, TCP_CONGESTION, cc_algo, strlen(cc_algo)))==0)
+                {
+                    perror("there is a problem to set the socket! \n");
+                    return;
+                }
+
+            printf("we change the CC algorithm  to %s\n", cc_algo);
+
+            // recive the second part of the file
+            gettimeofday(&startReno, NULL); // start the time
+
+            // recive a file of half mega bytes
+            while (bytecounter < BUFFERSIZE) // send the second part of the file
+            {
+                if (recv(client_sock, message, 1, 0) == -1)
+                {
+                    printf("recive failed \n");
+                    break;
+                }
+                bytecounter = bytecounter + 1;
+            }
+            usleep(1000); // wait for 1 ms
+
+            gettimeofday(&endReno, NULL);
+            timersub(&endReno, &startReno, &tvakReno); // the total time reno
+
+            printf("the reno algorithm took : %ld.%06ld, iter num: %d\n", (long int)tvakReno.tv_sec,
+                   (long int)tvakReno.tv_usec, inter_count);
+
+            // store the time elapsed in a variable
+
+            long int elapsedTimeReno = tvakReno.tv_sec * 1000000 + tvakReno.tv_usec;
+            long int *elapsedTimeReno_P = (long int *)malloc(sizeof(long int));
+            *elapsedTimeReno_P = elapsedTimeReno;
+            int *reno_param = (int *)malloc(sizeof(int));
+            *reno_param = 1;
+            enqueue(elapsedTimeReno_P, iteration_number_p, reno_param);
+
+            // if you get the exit message from the client, close the socket and exit
+            recv(client_sock, message, 1024, 0); // recive the message from the client
+            // if the client send the message "again" the server will recive the file again
+            if (strcmp(message, "again") == 0)
+            {
+                continue;
+            }
+            else
+            {
+                // print out the report
+                printf("\n\n");
+                printf("The report is: \n");
+                current_situation(inter_count);
+                close(client_sock); // close the socket
+                printf("client socket has been closed\n");
+                return;
+            }
+        }
     }
     close(server_sock);
     printf("server socket has been closed");
 }
 
-void handle_connection(int client_sock, int server_sock) 
-{
-    // recieve the first part of the file                            // will use them to check the timing
+// void handle_connection(int client_sock, int server_sock)
+// {
+//     // recieve the first part of the file                            // will use them to check the timing
 
-    uint32_t firstid = 5251;
-    uint32_t secondid = 9881;
-    uint32_t xor = firstid ^ secondid;
-    int iterationCounter = 0;
+//     uint32_t firstid = 5251;
+//     uint32_t secondid = 9881;
+//     uint32_t xor = firstid ^ secondid;
+//     int inter_count = 0;
 
-    int bytecounter = 0;
-    while(1)//  check the timing
-    {
-        struct timeval startCubic, endCubic, tvalCubic; // will use them to check the timing
-        struct timeval startReno, endReno, tvakReno;    // will use them to check the timing
+//     int bytecounter = 0;
+//     while(1)//  check the timing
+//     {
+//         struct timeval startCubic, endCubic, tvalCubic; // will use them to check the timing
+//         struct timeval startReno, endReno, tvakReno;    // will use them to check the timing
 
-        iterationCounter=iterationCounter+1;
-        bzero(message, BUFFERSIZE);// clear the buffer
+//         inter_count=inter_count+1;
+//         bzero(message, BUFFERSIZE);// clear the buffer
 
-        // set the algorithm to cubic
-        char *cc = "cubic";
-        if (setsockopt(client_sock, IPPROTO_TCP, TCP_CONGESTION, cc, strlen(cc)) != 0)
-        {
-            printf("setsockopt unfortunately failed! \n");
-            return;
-        }
-        printf("CC algorithm changed to %s\n", cc);
+//         // set the algorithm to cubic
+//         char *cc = "cubic";
+//         if (setsockopt(client_sock, IPPROTO_TCP, TCP_CONGESTION, cc, strlen(cc)) != 0)
+//         {
+//             printf("setsockopt unfortunately failed! \n");
+//             return;
+//         }
+//         printf("CC algorithm changed to %s\n", cc);
 
-    if (gettimeofday(&startCubic, NULL)<0) // start counting the time and check it's not under than zero
-    {
-         printf("time can't be less than 0 \n");
-                break;
-    }
-    
-        while (bytecounter < BUFFERSIZE / 2)//send the first part of the file
-        {
-            if (recv(client_sock, message, 1, 0) == -1)
-            {
-                printf("failed to recieve \n");
-                break;
-            }
-            bytecounter=bytecounter+1;
-        }
-        usleep(1000);
-        gettimeofday(&endCubic, NULL); // finish count for first part of the file
+//     if (gettimeofday(&startCubic, NULL)<0) // start counting the time and check it's not under than zero
+//     {
+//          printf("time can't be less than 0 \n");
+//                 break;
+//     }
 
-     
-        bzero(message, BUFFERSIZE);
-        timersub(&endCubic, &startCubic, &tvalCubic); // the total time cubic
+//         while (bytecounter < BUFFERSIZE / 2)//send the first part of the file
+//         {
+//             if (recv(client_sock, message, 1, 0) == -1)
+//             {
+//                 printf("failed to recieve \n");
+//                 break;
+//             }
+//             bytecounter=bytecounter+1;
+//         }
+//         usleep(1000);
+//         gettimeofday(&endCubic, NULL); // finish count for first part of the file
 
-        long int *time_elapsed_cubic = (long int *)malloc(sizeof(long int));
-        *time_elapsed_cubic = tvalCubic.tv_sec * 1000000 + tvalCubic.tv_usec;
-        int *iteration_number_p = (int *)malloc(sizeof(int));
-        *iteration_number_p = iterationCounter;
-        int *cubic_param = (int *)malloc(sizeof(int));
-        *cubic_param = 0;
-        enqueue(time_elapsed_cubic, iteration_number_p, cubic_param);
+//         bzero(message, BUFFERSIZE);
+//         timersub(&endCubic, &startCubic, &tvalCubic); // the total time cubic
 
-        printf("The algorithm is cubic, time: %ld.%06ld, iter num: %d\n",
-               (long int)tvalCubic.tv_sec,
-               (long int)tvalCubic.tv_usec,
-               iterationCounter);
+//         long int *time_elapsed_cubic = (long int *)malloc(sizeof(long int));
+//         *time_elapsed_cubic = tvalCubic.tv_sec * 1000000 + tvalCubic.tv_usec;
+//         int *iteration_number_p = (int *)malloc(sizeof(int));
+//         *iteration_number_p = inter_count;
+//         int *cubic_param = (int *)malloc(sizeof(int));
+//         *cubic_param = 0;
+//         enqueue(time_elapsed_cubic, iteration_number_p, cubic_param);
 
-        printf("sending the xor : %d \n", xor);
-        sendIT(xor, client_sock);// send the xor
+//         printf("The algorithm is cubic, time: %ld.%06ld, iter num: %d\n",
+//                (long int)tvalCubic.tv_sec,
+//                (long int)tvalCubic.tv_usec,
+//                inter_count);
 
-        bzero(message, BUFFERSIZE);
+//         printf("sending the xor : %d \n", xor);
+//         sendIT(xor, client_sock);// send the xor
 
-        // change the algorithm to reno
-        char *cc_algo = "reno"; // the CC algorithm to use (in this case, "reno")
+//         bzero(message, BUFFERSIZE);
 
-       if(setsockopt(server_sock, IPPROTO_TCP, TCP_CONGESTION, cc_algo, strlen(cc_algo)))==0)
-       {
-           perror("there is a problem to set the socket! \n");
-           return;
-       }        
+//         // change the algorithm to reno
+//         char *cc_algo = "reno"; // the CC algorithm to use (in this case, "reno")
 
+//        if(setsockopt(server_sock, IPPROTO_TCP, TCP_CONGESTION, cc_algo, strlen(cc_algo)))==0)
+//        {
+//            perror("there is a problem to set the socket! \n");
+//            return;
+//        }
 
-        printf("we change the CC algorithm  to %s\n", cc_algo);
+//         printf("we change the CC algorithm  to %s\n", cc_algo);
 
-        // recive the second part of the file
-        gettimeofday(&startReno, NULL); // start the time
+//         // recive the second part of the file
+//         gettimeofday(&startReno, NULL); // start the time
 
-        // recive a file of half mega bytes
-        while (bytecounter < BUFFERSIZE) //send the second part of the file
-        {
-            if (recv(client_sock, message, 1, 0) == -1)
-            {
-                printf("recive failed \n");
-                break;
-            }
-            bytecounter=bytecounter+1;
-        }
-        usleep(1000);// wait for 1 ms
+//         // recive a file of half mega bytes
+//         while (bytecounter < BUFFERSIZE) //send the second part of the file
+//         {
+//             if (recv(client_sock, message, 1, 0) == -1)
+//             {
+//                 printf("recive failed \n");
+//                 break;
+//             }
+//             bytecounter=bytecounter+1;
+//         }
+//         usleep(1000);// wait for 1 ms
 
-        gettimeofday(&endReno, NULL); 
-        timersub(&endReno, &startReno, &tvakReno); // the total time reno
+//         gettimeofday(&endReno, NULL);
+//         timersub(&endReno, &startReno, &tvakReno); // the total time reno
 
-        printf("the reno algorithm took : %ld.%06ld, iter num: %d\n", (long int)tvakReno.tv_sec,
-         (long int)tvakReno.tv_usec, iterationCounter);
-         
-        // store the time elapsed in a variable
+//         printf("the reno algorithm took : %ld.%06ld, iter num: %d\n", (long int)tvakReno.tv_sec,
+//          (long int)tvakReno.tv_usec, inter_count);
 
-        long int elapsedTimeReno = tvakReno.tv_sec * 1000000 + tvakReno.tv_usec;
-        long int *elapsedTimeReno_P = (long int *)malloc(sizeof(long int));
-        *elapsedTimeReno_P = elapsedTimeReno;
-        int *reno_param = (int *)malloc(sizeof(int));
-        *reno_param = 1;
-        enqueue(elapsedTimeReno_P, iteration_number_p, reno_param);
+//         // store the time elapsed in a variable
 
-        // if you get the exit message from the client, close the socket and exit
-        recv(client_sock, message, 1024, 0);// recive the message from the client
-        // if the client send the message "again" the server will recive the file again
-        if (strcmp(message, "again") == 0)
-        {
-            continue;
-        }
-        else
-        {
-            // print out the report
-            printf("\n\n");
-            printf("The report is: \n");
-            current_situation(iterationCounter);
-            close(client_sock);// close the socket
-            printf("client socket has been closed\n");
-            return;
-        }
-    }
-}
+//         long int elapsedTimeReno = tvakReno.tv_sec * 1000000 + tvakReno.tv_usec;
+//         long int *elapsedTimeReno_P = (long int *)malloc(sizeof(long int));
+//         *elapsedTimeReno_P = elapsedTimeReno;
+//         int *reno_param = (int *)malloc(sizeof(int));
+//         *reno_param = 1;
+//         enqueue(elapsedTimeReno_P, iteration_number_p, reno_param);
+
+//         // if you get the exit message from the client, close the socket and exit
+//         recv(client_sock, message, 1024, 0);// recive the message from the client
+//         // if the client send the message "again" the server will recive the file again
+//         if (strcmp(message, "again") == 0)
+//         {
+//             continue;
+//         }
+//         else
+//         {
+//             // print out the report
+//             printf("\n\n");
+//             printf("The report is: \n");
+//             current_situation(inter_count);
+//             close(client_sock);// close the socket
+//             printf("client socket has been closed\n");
+//             return;
+//         }
+//     }
+// }
 int sendIT(int num, int fd)
 {
     int32_t conv = htonl(xor);
@@ -219,36 +341,34 @@ int sendIT(int num, int fd)
         else
         {
             data += rc;
-            lpart=lpart -rc ;
+            lpart = lpart - rc;
         }
-    }
-    while (lpart > 0);
+    } while (lpart > 0);
     return 0;
-
 }
 
-void current_situation(int times) 
+void current_situation(int times)
 {
-    long int avgC = 0;// average time for cubic
-    long int avgR = 0;// average time for reno
-    long int avgTotal = 0;// average time for total
-    long int dequ_counter = 0;// counter for the dequeue
+    long int avgC = 0;         // average time for cubic
+    long int avgR = 0;         // average time for reno
+    long int avgTotal = 0;     // average time for total
+    long int dequ_counter = 0; // counter for the dequeue
 
     // dequeue the queue and print out the report
-    while (head != NULL)// while the queue is not empty
+    while (head != NULL) // while the queue is not empty
     {
-    
-        if (*head->cubic_is_0_reno_is_1 == 1)// if the algorithm is reno
+
+        if (*head->cubic_is_0_reno_is_1 == 1) // if the algorithm is reno
         {
             avgR += *head->time_in_micro_seconds;
         }
-        if (*head->cubic_is_0_reno_is_1 == 0)// if the algorithm is cubic
+        if (*head->cubic_is_0_reno_is_1 == 0) // if the algorithm is cubic
         {
-            avgC = avgC+ *head->time_in_micro_seconds;// add the time to the cubic average
+            avgC = avgC + *head->time_in_micro_seconds; // add the time to the cubic average
         }
-        avgTotal += *head->time_in_micro_seconds;// add the time to the total average
-        dequeue();// dequeue the queue
-        dequ_counter=dequ_counter+1;// increase the counter
+        avgTotal += *head->time_in_micro_seconds; // add the time to the total average
+        dequeue();                                // dequeue the queue
+        dequ_counter = dequ_counter + 1;          // increase the counter
     }
 
     printf("the results: \n\n");
@@ -257,4 +377,3 @@ void current_situation(int times)
     printf("the average time for reno algorithm is %ld \n", avgR / times);
     printf("the average time for total algorithm is %ld \n", avgTotal / dequ_counter);
 }
-
