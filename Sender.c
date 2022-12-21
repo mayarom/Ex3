@@ -70,14 +70,15 @@ int main()
 
     // socket create and verification
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd == -1)
+    if (sockfd == -1)// if socket creation failed then
     {
         printf("Unfortunally socket creation failed...\n");
         return 1;
     }
-    else
+    else // if socket created successfully then
     {
         printf("Socket successfully created..\n");
+
     }
     bzero(&servaddr, sizeof(servaddr));
 
@@ -134,9 +135,9 @@ int main()
                 printf("Authentication has been failed \n");
                 break;
             }
-            else{
+            else
+            {
                 printf("Authentication has succeed! \n");
-                
             }
 
             char *ccAlgorithm = "reno"; // the CC algorithm to use (in this case, "reno")
@@ -163,6 +164,8 @@ int main()
 
             printf("Second part sent \n");
 
+            printf("*** you are lucky! you got all the file ! *** \n");
+
             // prompt the user what to do: "Send the file again? (y/n)" and wait for the user's input
             // if the user enters 'y', send the file again
             // if the user enters 'n', break the loop
@@ -175,7 +178,11 @@ int main()
                 send(sockfd, "again", 5, 0);
                 continue;
             }
-            else
+            if (choice != 'n' && choice != 'y')
+            {
+                printf("Invalid input \n");
+                break;
+            }
             {
                 // Send an exit message to the receiver.
                 // The receiver will close the connection and exit
@@ -187,11 +194,10 @@ int main()
         }
     }
     close(sockfd);
-    printf("Connection closed\n");
+    printf("Connection closed, free first part (%p), free second part (%p)\n", firstPart, secondPart);
     free(firstPart);
-    printf("free first part\n");
     free(secondPart);
-    printf("free second part\n");
+
     return 0;
 }
 

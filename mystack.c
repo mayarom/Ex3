@@ -22,20 +22,25 @@ void push(long *timeInMicroSeconds, int *interationCounter, int *cubic_is_0_reno
     }
 }
 
-long *pop() {
-    if (first == NULL) {
+long *pop()
+{
+    if (first == NULL)
+    {
         return NULL;
     }
 
     long *result = first->timeInMicroSeconds;
 
     // Print the algorithm name and iteration number
-    if (*(first->cubic_is_0_reno_is_1) == 0) {
+    if (*(first->cubic_is_0_reno_is_1) == 0)
+    {
         printf("algorithm is: cubic iter number: %d time: %ld micro_sec \n",
-        *(first->interationCounter), *(first->timeInMicroSeconds));
-    } else if (*(first->cubic_is_0_reno_is_1) == 1) {
+               *(first->interationCounter), *(first->timeInMicroSeconds));
+    }
+    else if (*(first->cubic_is_0_reno_is_1) == 1)
+    {
         printf("algorithm is: reno iter number: %d time: %ld micro_sec  \n",
-        *(first->interationCounter), *(first->timeInMicroSeconds));
+               *(first->interationCounter), *(first->timeInMicroSeconds));
     }
 
     // Save a pointer to the current first node
