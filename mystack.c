@@ -2,55 +2,51 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-node_t *head = NULL;
-node_t *tail = NULL;
+node_t *first = NULL;
 
-void enqueue(long int *time_in_micro_seconds, int *iteration_number, int *cubic_is_0_reno_is_1)
+void push(long *timeInMicroSeconds, int *interationCounter, int *cubic_is_0_reno_is_1)
 {
-    node_t *newnode = malloc(sizeof(node_t));
-    newnode->time_in_micro_seconds = time_in_micro_seconds;
-    newnode->iteration_number = iteration_number;
-    newnode->cubic_is_0_reno_is_1 = cubic_is_0_reno_is_1;
-    newnode->next = NULL;
-    if (tail == NULL)
+    node_t *newN = malloc(sizeof(node_t));
+    newN->timeInMicroSeconds = timeInMicroSeconds;
+    newN->interationCounter = interationCounter;
+    newN->cubic_is_0_reno_is_1 = cubic_is_0_reno_is_1;
+    newN->nextN = NULL;
+    if (first == NULL)
     {
-        head = newnode;
+        first = newN;
     }
     else
     {
-        tail->next = newnode;
+        newN->nextN = first;
+        first = newN;
     }
-    tail = newnode;
 }
 
-// return the value
-long int *dequeue()
-{
-    if (head == NULL)
-    {
+long *pop() {
+    if (first == NULL) {
         return NULL;
     }
-    else
-    {
-        long int *result = head->time_in_micro_seconds;
-        if (*(head->cubic_is_0_reno_is_1) == 0)
-        {
-            printf("algorithm is: cubic iter num: %d time: %ld micro_sec \n",
-                   *(head->iteration_number), *(head->time_in_micro_seconds));
-        }
-        else if (*(head->cubic_is_0_reno_is_1) == 1)
-        {
-            printf("algorithm is: reno iter num: %d time: %ld micro_sec  \n",
-                   *(head->iteration_number), *(head->time_in_micro_seconds));
-        }
 
-        node_t *temp = head;
-        head = head->next;
-        if (head == NULL)
-        {
-            tail = NULL;
-        }
-        free(temp);
-        return result;
+    long *result = first->timeInMicroSeconds;
+
+    // Print the algorithm name and iteration number
+    if (*(first->cubic_is_0_reno_is_1) == 0) {
+        printf("algorithm is: cubic iter number: %d time: %ld micro_sec \n",
+        *(first->interationCounter), *(first->timeInMicroSeconds));
+    } else if (*(first->cubic_is_0_reno_is_1) == 1) {
+        printf("algorithm is: reno iter number: %d time: %ld micro_sec  \n",
+        *(first->interationCounter), *(first->timeInMicroSeconds));
     }
+
+    // Save a pointer to the current first node
+    node_t *temp = first;
+
+    // Set the first node to be the next node in the list
+    first = first->nextN;
+
+    // Free the memory used by the old first node
+    free(temp);
+
+    // Return the result
+    return result;
 }

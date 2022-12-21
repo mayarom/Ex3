@@ -1,24 +1,17 @@
-# Makefile for TCP project
-# Author: 2015-2016, Jack Lange <
-# Date: 2015-11-01
-#all: mystack tcp_receiver tcp_sender 
+all: mystack Receiver Sender receiver
 
-#-c compile .o files use this when i want to compile more than one file 
-#-o change the name of the output file - only when i want to chane to another name
-#Wall is a flag that tells the compiler to print all warnings
-all: mystack tcp_receiver receivermain tcp_sender
+mystack:
+	gcc mystack.c -c -Wall	
 
-tcp_receiver: 
-	gcc tcp-receiver.c -c -Wall 
+receiver:
+	gcc -o Receiver Receiver.o mystack.o -Wall 		
 
-tcp_sender: 
-	gcc -o Sender tcp-sender.c -Wall
+Receiver:
+	gcc Receiver.c -c -Wall 
 
-mystack: 
-	gcc mystack.c -c -Wall
+Sender:
+	gcc -o Sender Sender.c -Wall 	
 
-receivermain:
-	gcc -o Receiver mystack.o tcp-receiver.o -Wall
+clean:
+	rm -f *.o Sender Receiver
 
-clean: 
-	rm -f *.o 
