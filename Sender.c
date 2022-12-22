@@ -20,51 +20,71 @@
 #define PORT 5060
 #define MAX_LENGTH 1462544 // 1 MB
 #define SA struct sockaddr
+#define ONE 1
 
+void getChoice(int sockfd, char *choice);
 int intReceiver(int *number, int fd);
 
 int main()
 {
 
     // Open the file in read-only mode
-    FILE *file = fopen("1mb.txt", "r");
-    if (!file) // if the file is not exist
+    FILE *our_file = fopen("1mb.txt", "r");
+    if (our_file == NULL) // if the file is not exist
     {
         perror(" oops, we can't open the file");
-        return 1; // return 1 to indicate an error
+        return ONE; // return 1 to indicate an error
     }
 
-    // Get the file size
-    fseek(file, 0, SEEK_END);
-    long fileSize = ftell(file);
-    rewind(file);
+    // Move the file position indicator to the end of the file
+    int res = fseek(our_file, 0, SEEK_END);
+    if (res != 0)
+    {
+        perror("oops, there is a problem with the file");
+        return ONE;
+    }
+    long fileSize = ftell(our_file);
 
-    // Calculate the size of the first and second parts
+    // Check that the file position indicator is at the end of the file
+    long pos = ftell(our_file);
+
+    if (pos != fileSize)
+    {
+        perror("oops, there is a problem with the file");
+        return ONE;
+    }
     long secondPartSize = fileSize / 2;
     long firstPartSize = fileSize / 2;
+
+    rewind(our_file); // return the pointer to the beginning of the file
 
     // Read the first part of the file
     char *firstPart = malloc(firstPartSize); // make a place in the memory for the first part of the file
     if (!firstPart)
     {
         perror("oops, there is a problem with allocating memory");
-        fclose(file);
-        return 1;
+        return ONE;
     }
-    fread(firstPart, 1, firstPartSize, file);
+    size_t bytes_read = fread(firstPart, 1, firstPartSize, our_file);
+
+    if (bytes_read == 0) // if there is a problem with reading the file
+    {
+        perror("oops, there is a problem with reading the file");
+        return ONE;
+    }
 
     // Read the second part of the file
     char *secondPart = malloc(secondPartSize);
     if (!secondPart)
     {
         perror("oops, there is a problem with allocating memory");
-        fclose(file);
-        return 1;
+        fclose(our_file);
+        return ONE;
     }
-    fread(secondPart, 1, secondPartSize, file);
+    fread(secondPart, 1, secondPartSize, our_file);
 
     // Close the file
-    fclose(file);
+    fclose(our_file);
 
     int sockfd;
     struct sockaddr_in servaddr;
@@ -90,9 +110,9 @@ int main()
     // connect the sender socket to receiver socket
     if (connect(sockfd, (SA *)&servaddr, sizeof(servaddr)) != 0)
     {
-        printf("Unfortunally the connection with the receiver has been failed failed...\n");
+        printf("oops, the connection with the receiver has been failed ! don't give up, try again\n");
         close(sockfd);
-        return 1;
+        return ONE;
     }
     else
     {
@@ -171,24 +191,9 @@ int main()
             // if the user enters 'n', break the loop
             printf("Send the file again? (y/n): ");
 
-            scanf(" %c", &choice);
-            while (choice != 'n' && choice != 'y')
+            getChoice(sockfd, &choice);
+            if (choice == 'n')
             {
-                printf("Invalid input, try again \n");
-                scanf(" %c", &choice);
-            }
-            if (choice == 'y')
-            {
-                // tell the receiver to send the file again
-                send(sockfd, "again", 5, 0);
-                continue;
-            }
-            else // choice == 'n'
-            {
-
-                // Send an exit message to the receiver.
-                // The receiver will close the connection and exit
-                send(sockfd, "exit", 4, 0);
                 break;
             }
 
@@ -196,32 +201,54 @@ int main()
         }
     }
     close(sockfd);
-    printf("Connection closed, free first part , free second part \n");
+    printf("Connection closed, free first part, free second part \n");
 
     return 0;
 }
 
 int intReceiver(int *number, int fd)
 {
-    int32_t ret;
-    char *data = (char *)&ret;
-    int left = sizeof(ret);
-    int rc;
-    for (int i = 0; i < left; i += rc)
+    int32_t conv;               // the int32_t variable
+    char *data = (char *)&conv; // the char pointer
+    int part = sizeof(conv);
+    int check; // the check variable
+    for (int i = 0; i < part; i += check)
     {
-        rc = read(fd, data + i, left - i);
-        if (rc <= 0)
+        check = read(fd, data + i, part - i);
+        if (check <= 0) // if the check is less or equal to 0
         {
             if ((errno == EAGAIN) || (errno == EWOULDBLOCK))
             {
-                // use select() or epoll() to wait for the socket to be readable again
+                perror("oops, we find a problem with reading the data");
             }
-            else if (errno != EINTR)
+            if (errno != EINTR) // if the error is not EINTR
             {
+                perror("oops, we find a problem with reading the data");
                 return -1;
             }
         }
     }
-    *number = ntohl(ret);
+    *number = ntohl(conv);
     return 0;
+}
+
+void getChoice(int sockfd, char *choice)
+{
+    scanf(" %c", choice);
+    while (*choice != 'n' && *choice != 'y' && *choice != 'N' && *choice != 'Y')
+    {
+        printf("Invalid input, try again \n");
+        scanf(" %c", choice);
+    }
+    if (*choice == 'y' || *choice == 'Y')
+    {
+        // tell the receiver to send the file again
+        send(sockfd, "again", 5, 0);
+    }
+    else
+    { // *choice == 'n'
+        // Send an exit message to the receiver.
+        // The receiver will close the connection and exit
+        send(sockfd, "exit", 4, 0);
+    }
 }
