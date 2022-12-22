@@ -91,13 +91,12 @@ int main()
 
     // socket create and verification
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd == -1) // if socket creation failed then
+    switch (sockfd)
     {
-        printf("Unfortunally socket creation failed...\n");
+    case -1:
+        printf("Unfortunately socket creation failed...\n");
         return 1;
-    }
-    else // if socket created successfully then
-    {
+    default:
         printf("good ! we make the socket \n");
     }
     bzero(&servaddr, sizeof(servaddr));
@@ -137,7 +136,7 @@ int main()
                 if (send(sockfd, firstPart, 1, 0) == -1) // send the first part of the file
                 {
                     printf("oops' there is a problem with sending the data \n");
-                    return -1;
+                    break;
                 }
                 firstPartSize = firstPartSize - 1;
             }
@@ -192,7 +191,7 @@ int main()
             printf("Send the file again? (y/n): ");
 
             getChoice(sockfd, &choice);
-            if (choice == 'n')
+            if (choice == 'n' || choice == 'N')
             {
                 break;
             }
