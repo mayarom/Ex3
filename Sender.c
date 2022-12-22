@@ -16,7 +16,7 @@
 
 #define MAYA 5251
 #define YOGEV 9881
-#define PORT 5030
+#define PORT 5060
 #define MAX_LENGTH 1462544 // 1 MB
 #define SA struct sockaddr
 
@@ -70,7 +70,7 @@ int main()
 
     // socket create and verification
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd == -1)// if socket creation failed then
+    if (sockfd == -1) // if socket creation failed then
     {
         printf("Unfortunally socket creation failed...\n");
         return 1;
@@ -78,7 +78,6 @@ int main()
     else // if socket created successfully then
     {
         printf("Socket successfully created..\n");
-
     }
     bzero(&servaddr, sizeof(servaddr));
 
