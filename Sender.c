@@ -13,6 +13,7 @@
 #include <netinet/tcp.h>
 #include <stdio.h>
 #include "unistd.h"
+#include "mystack.h"
 
 #define MAYA 5251
 #define YOGEV 9881
@@ -29,7 +30,7 @@ int main()
     FILE *file = fopen("1mb.txt", "r");
     if (!file)
     {
-        perror("Error opening file");
+        perror("-1 opening file");
         return 1;
     }
 
@@ -43,10 +44,10 @@ int main()
     long firstPartSize = fileSize / 2;
 
     // Read the first part of the file
-    char *firstPart = malloc(firstPartSize);
+    char *firstPart = malloc(firstPartSize); // make a place in the memory for the first part of the file
     if (!firstPart)
     {
-        perror("Error allocating memory");
+        perror("oops, there is a problem with allocating memory");
         fclose(file);
         return 1;
     }
@@ -56,7 +57,7 @@ int main()
     char *secondPart = malloc(secondPartSize);
     if (!secondPart)
     {
-        perror("Error allocating memory");
+        perror("oops, there is a problem with allocating memory");
         fclose(file);
         return 1;
     }
@@ -77,7 +78,7 @@ int main()
     }
     else // if socket created successfully then
     {
-        printf("Socket successfully created..\n");
+        printf("good ! we make the socket \n");
     }
     bzero(&servaddr, sizeof(servaddr));
 
@@ -113,9 +114,9 @@ int main()
             // send the first part of the file like the way we did in reciever.c
             while (firstPartSize > 0)
             {
-                if (send(sockfd, firstPart, 1, 0) == -1)
+                if (send(sockfd, firstPart, 1, 0) == -1) // send the first part of the file
                 {
-                    printf("Error while sending data \n");
+                    printf("oops' there is a problem with sending the data \n");
                     return -1;
                 }
                 firstPartSize = firstPartSize - 1;
@@ -146,7 +147,7 @@ int main()
             int return_value = setsockopt(sockfd, IPPROTO_TCP, TCP_CONGESTION, ccAlgorithm, strlen(ccAlgorithm));
             if (return_value == -1)
             {
-                printf("Error setting the cc algorithm to reno \n");
+                printf("-1 setting the cc algorithm to reno \n");
                 break;
             }
 
@@ -155,7 +156,7 @@ int main()
             {
                 if (send(sockfd, secondPart, 1, 0) == -1)
                 {
-                    printf("Error while sending the secondPart \n");
+                    printf("-1 while sending the secondPart \n");
                     break;
                 }
                 secondPartSize = secondPartSize - 1;

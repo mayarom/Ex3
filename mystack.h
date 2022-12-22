@@ -1,6 +1,7 @@
 #ifndef MYSTACK
 #define MYSTACK
 
+
 struct first // node
 {
     struct first *nextN; // pointer to next node
