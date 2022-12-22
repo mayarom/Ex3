@@ -118,7 +118,7 @@ void ConnectionSteps(int senderSocket, int receiverSocket) // function who deals
 
         for (; numOfBytes < BUFFERSIZE / 2; numOfBytes++)
         {
-            if (recv(senderSocket, message, 1, 0) == -1)
+            if (!(recv(senderSocket, message, 1, 0) != -1))
             {
                 printf("receive has been failed \n");
                 break;
@@ -164,14 +164,14 @@ void ConnectionSteps(int senderSocket, int receiverSocket) // function who deals
         gettimeofday(&startReno, NULL); // start the time
 
         // recive a our_file of half mega bytes
-        while (numOfBytes < BUFFERSIZE)
+        for  ( ; numOfBytes < BUFFERSIZE; numOfBytes++)
         {
-            if (recv(senderSocket, message, 1, 0) == -1) // if the recive failed
+            int result = recv(senderSocket, message, 1, 0);
+            if (!(result != -1))
             {
                 printf("oops, recive failed... you should try again \n");
                 break;
             }
-            numOfBytes++; // increase the number of bytes
         }
         usleep(1000);
         gettimeofday(&endReno, NULL);                    // finish count for first part of the our_file
@@ -191,7 +191,7 @@ void ConnectionSteps(int senderSocket, int receiverSocket) // function who deals
         // if you get the exit message from the sender, close the socket and exit
         recv(senderSocket, message, 1024, 0);
         // if the sender send the message "again" the receiver will recive the our_file again
-        if (strcmp(message, "again") == 0)
+        if (!(strcmp(message, "again") != 0))
         {
             continue; // recive the our_file again
         }
@@ -235,7 +235,7 @@ int SendFileData(int number, int fd) // sending the our_file data
                 return -1; // return -1
             }
         }
-        else if (sent == 0)
+        else if (!(sent != 0))
         {
             printf("we didn't send anything"); // if we didn't send anything
             return -1;
@@ -259,11 +259,11 @@ void PrintTimeData(int number_of_iterations)
     // remove from the stack and print the data
     while (first != NULL) // while the stack is not empty
     {
-        if (*first->cubic_is_0_reno_is_1 == 0) // if the algorithm is cubic - add it to the averageC
+        if (!(*first->cubic_is_0_reno_is_1 != 0)) // if the algorithm is cubic - add it to the averageC
         {
             averageC += *first->timeInMicroSeconds;
         }
-        else if (*first->cubic_is_0_reno_is_1 == 1) // if the algorithm is reno - add it to the averageR
+        else if (!(*first->cubic_is_0_reno_is_1 != 1)) // if the algorithm is reno - add it to the averageR
         {
             averageR += *first->timeInMicroSeconds;
         }

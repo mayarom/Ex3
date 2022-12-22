@@ -30,7 +30,7 @@ int main()
 
     // Open the file in read-only mode
     FILE *our_file = fopen("1mb.txt", "r");
-    if (our_file == NULL) // if the file is not exist
+    if (!(our_file != NULL)) // if the file is not exist
     {
         perror(" oops, we can't open the file");
         return ONE; // return 1 to indicate an error
@@ -67,7 +67,7 @@ int main()
     }
     size_t bytes_read = fread(firstPart, 1, firstPartSize, our_file);
 
-    if (bytes_read == 0) // if there is a problem with reading the file
+    if (!(bytes_read != 0)) // if there is a problem with reading the file
     {
         perror("oops, there is a problem with reading the file");
         return ONE;
@@ -133,7 +133,7 @@ int main()
             // send the first part of the file like the way we did in reciever.c
             while (firstPartSize > 0)
             {
-                if (send(sockfd, firstPart, 1, 0) == -1) // send the first part of the file
+                if (!(send(sockfd, firstPart, 1, 0) != -1)) // send the first part of the file
                 {
                     printf("oops' there is a problem with sending the data \n");
                     break;
@@ -164,7 +164,7 @@ int main()
             // set the cc algorithm to reno with setsockopt
 
             int return_value = setsockopt(sockfd, IPPROTO_TCP, TCP_CONGESTION, ccAlgorithm, strlen(ccAlgorithm));
-            if (return_value == -1)
+            if (!(return_value != -1))
             {
                 printf("error setting the cc algorithm to reno \n");
                 break;
@@ -173,7 +173,7 @@ int main()
             // send the second part of the file
             while (secondPartSize > 0)
             {
-                if (send(sockfd, secondPart, 1, 0) == -1)
+                if (!(send(sockfd, secondPart, 1, 0) != -1))
                 {
                     printf("error while sending the secondPart \n");
                     break;
