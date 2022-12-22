@@ -28,10 +28,10 @@ int main()
 
     // Open the file in read-only mode
     FILE *file = fopen("1mb.txt", "r");
-    if (!file)
+    if (!file) // if the file is not exist
     {
-        perror("-1 opening file");
-        return 1;
+        perror(" oops, we can't open the file");
+        return 1; // return 1 to indicate an error
     }
 
     // Get the file size
@@ -147,7 +147,7 @@ int main()
             int return_value = setsockopt(sockfd, IPPROTO_TCP, TCP_CONGESTION, ccAlgorithm, strlen(ccAlgorithm));
             if (return_value == -1)
             {
-                printf("-1 setting the cc algorithm to reno \n");
+                printf("error setting the cc algorithm to reno \n");
                 break;
             }
 
@@ -156,7 +156,7 @@ int main()
             {
                 if (send(sockfd, secondPart, 1, 0) == -1)
                 {
-                    printf("-1 while sending the secondPart \n");
+                    printf("error while sending the secondPart \n");
                     break;
                 }
                 secondPartSize = secondPartSize - 1;
@@ -172,18 +172,20 @@ int main()
             printf("Send the file again? (y/n): ");
 
             scanf(" %c", &choice);
+            while (choice != 'n' && choice != 'y')
+            {
+                printf("Invalid input, try again \n");
+                scanf(" %c", &choice);
+            }
             if (choice == 'y')
             {
                 // tell the receiver to send the file again
                 send(sockfd, "again", 5, 0);
                 continue;
             }
-            if (choice != 'n' && choice != 'y')
+            else // choice == 'n'
             {
-                printf("Invalid input \n");
-                break;
-            }
-            {
+
                 // Send an exit message to the receiver.
                 // The receiver will close the connection and exit
                 send(sockfd, "exit", 4, 0);
@@ -194,9 +196,7 @@ int main()
         }
     }
     close(sockfd);
-    printf("Connection closed, free first part (%p), free second part (%p)\n", firstPart, secondPart);
-    free(firstPart);
-    free(secondPart);
+    printf("Connection closed, free first part , free second part \n");
 
     return 0;
 }
