@@ -20,9 +20,9 @@ void push(long *timeInMicroSeconds, int *interationCounter, int *cubic_is_0_reno
     first = new_node;
 }
 
-long *pop()
+long *pop() // returns the timeInMicroSeconds
 {
-    if (first == NULL)
+    if (first == NULL)// if the stack is empty
     {
         return NULL;
     }
@@ -32,11 +32,11 @@ long *pop()
     // Print the algorithm name and iteration number
     switch (*(first->cubic_is_0_reno_is_1))
     {
-    case 0:
+    case 0://cubic
         printf("algorithm is: cubic iter number: %d time: %ld micro_sec \n",
                *(first->interationCounter), *(first->timeInMicroSeconds));
         break;
-    case 1:
+    case 1://reno
         printf("algorithm is: reno iter number: %d time: %ld micro_sec \n",
                *(first->interationCounter), *(first->timeInMicroSeconds));
         break;
