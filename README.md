@@ -1,4 +1,4 @@
-# TCP Congestion Control Benchmarking Tool
+# TCP Sender and Receiver
 
 This is a TCP congestion control benchmarking tool that measures the performance of the `cubic` and `reno` congestion control algorithms. It includes a sender and a receiver that communicate over TCP, with the sender sending a large amount of data to the receiver using a specific congestion control algorithm.
 
